@@ -36,7 +36,7 @@ int main (int argc, char **argv) {
 	payload=UDPgetpacketpointers(packet,&etherHeader,&IPheader,&udpHeader);
 
 	// Look for and bind to wireless interface, other than creating the raw socket
-	ret_wlanl_val=wlanLookup(devname,&ifindex,NULL,0);
+	ret_wlanl_val=wlanLookup(devname,&ifindex,NULL,NULL,0);
 	if(ret_wlanl_val<=0) {
 		fprintf(stderr,"wlanLookup() error.\n");
 		rs_printerror(stderr,ret_wlanl_val);

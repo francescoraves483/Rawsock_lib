@@ -1,3 +1,5 @@
+// Rawsock library, licensed under GPLv2
+// Version 0.2.0
 #include "ipcsum_alth.h"
 
 // This is all taken from Linux kernel 4.19.1 (this is not original work)
@@ -24,6 +26,7 @@ static inline unsigned short from64to16(unsigned long x)
 	return out_v.us[0] + out_v.us[1];
 }
 
+// This is all taken from Linux kernel 4.19.1 (this is not original work)
 static inline unsigned long do_csum(const unsigned char * buff, int len) {
 	int odd, count;
 	unsigned long result = 0;
@@ -85,6 +88,22 @@ out:
 	return result;
 }
 
+/**
+	\brief Calculate the IPv4 checksum (optimized for IP headers, which always checksum on 4 octet boundaries) 
+
+	This function can be used to compute the IPv4 header checksum, given the whole header and the IHL field.
+
+	__Example of use:__
+
+		struct iphdr header;
+
+		header.check=ip_fast_csum((__u8 *)&header, 5); // IHL = 5 word -> no options
+
+	\param[in]	iph 		Pointer to the IPv4 header.
+	\param[in] 	ihl 		Value of the IPv4 IHL (_Internet Header Length_).
+
+	\return The result of the checksum calculation, ready to be inserted inside the _check_ field of the _struct iphdr_.
+**/
 __sum16 ip_fast_csum(const void *iph, unsigned int ihl)
 {
 	return (__sum16)~do_csum(iph,ihl*4);
