@@ -1,5 +1,5 @@
 // Rawsock library, licensed under GPLv2
-// Version 0.2.1
+// Version 0.3.0
 #include "rawsock.h"
 #include "rawsock_lamp.h"
 #include "minirighi_udp_checksum.h"
@@ -43,9 +43,9 @@ void lampHeadPopulate(struct lamphdr *lampHeader, unsigned char ctrl, unsigned s
 }
 
 /**
-	\brief Set the INIT type field ("length or INIT type") inside a LaMP header
+	\brief Set the INIT type field ("length or packet type") inside a LaMP header
 
-	This function can be used to set the "length or INIT type" field inside an already populated LaMP header.
+	This function can be used to set the "length or packet type" field inside an already populated LaMP header.
 
 	As it can be used to set an **INIT type**, this function has an effect only if the headers carries an
 	"INIT" packet type and a valid index (see [INIT_PINGLIKE_INDEX](\ref INIT_PINGLIKE_INDEX) and [INIT_UNIDIR_INDEX](\ref INIT_UNIDIR_INDEX))
@@ -66,27 +66,60 @@ void lampHeadSetConnType(struct lamphdr *initLampHeader, uint16_t mode_index) {
 }
 
 /**
+	\brief Set the FOLLOWUP_CTRL type field ("length or packet type") inside a LaMP header
+
+	This function can be used to set the "length or packet type" field inside an already populated LaMP header.
+
+	As it can be used to set a **FOLLOWUP_CTRL type**, this function has an effect only if the headers carries a
+	"FOLLOWUP_CTRL" packet type and a valid type is specified, otherwise it has no effect.
+
+	\note Like all the other functions inside the Rawsock library, it already takes care of byte ordering.
+
+	\param[in,out]		followupLampHeader 		Pointer to the LaMP header structure, already populated by lampHeadPopulate().
+	\param[in]			followup_type			FOLLOWUP_CTRL type to be used (see for instance [FOLLOWUP_REQUEST](\ref FOLLOWUP_REQUEST))
+
+	\return None.
+**/
+void lampHeadSetFollowupCtrlType(struct lamphdr *followupLampHeader, uint16_t followup_type) {
+	// If packet type is not FOLLOWUP_CTRL, ignore any operation on the LaMP header
+	if(followupLampHeader->ctrl==CTRL_FOLLOWUP_CTRL && IS_FOLLOWUP_CTRL_TYPE_VALID(followup_type)) {
+		followupLampHeader->len=htons(followup_type);
+	}
+}
+
+/**
 	\brief Set the timestamp inside a LaMP Header
 
 	This function can be used to set the timestamp (seconds and microseconds fields) inside the specified LaMP header.
 
-	The timestamp is set to the time instant in which this function was called and started its execution.
+	If tStampPtr is NULL, the timestamp is set to the time instant in which this function was called and started its execution.
+	If it is not NULL, it will be set using the values stored inside the specified struct timeval.
 
 	<b>A realtime clock is used</b> (i.e. the one used for _gettimeofday()_).
+
+	This function has no effect if the packet is timestampless (i.e. if the control field is indicating a "TLESS" type)
 
 	\note Like all the other functions inside the Rawsock library, it already takes care of byte ordering.
 
 	\param[in,out]		lampHeader 		Pointer to the LaMP header structure.
+	\param[in]			tStampPtr		Pointer to a struct timeval to store a custom timestamp, or NULL to use the current time
 
 	\return None.
 **/
-void lampHeadSetTimestamp(struct lamphdr *lampHeader) {
+void lampHeadSetTimestamp(struct lamphdr *lampHeader, struct timeval *tStampPtr) {
 	struct timeval currtime;
 
-	gettimeofday(&currtime,NULL); // Set timestamp as very last operation, only if it is not a ping-like reply
+	if(lampHeader->ctrl!=CTRL_PINGLIKE_REQ_TLESS && lampHeader->ctrl!=CTRL_PINGLIKE_REPLY_TLESS && lampHeader->ctrl!=CTRL_PINGLIKE_ENDREQ_TLESS && lampHeader->ctrl!=CTRL_PINGLIKE_ENDREPLY_TLESS) {
+		if(tStampPtr==NULL) {
+			gettimeofday(&currtime,NULL); // Set timestamp as very last operation, only if it is not a TLESS packet
 
-	lampHeader->sec=hton64((uint64_t) currtime.tv_sec);
-	lampHeader->usec=hton64((uint64_t) currtime.tv_usec);
+			lampHeader->sec=hton64((uint64_t) currtime.tv_sec);
+			lampHeader->usec=hton64((uint64_t) currtime.tv_usec);
+		} else {
+			lampHeader->sec=hton64((uint64_t) tStampPtr->tv_sec);
+			lampHeader->usec=hton64((uint64_t) tStampPtr->tv_usec);
+		}
+	}
 }
 
 /**
@@ -141,6 +174,48 @@ void lampSetUnidirStop(struct lamphdr *lampHeader) {
 **/
 void lampSetPinglikeEndreq(struct lamphdr *lampHeader) {
 	lampHeader->ctrl=CTRL_PINGLIKE_ENDREQ;
+}
+
+/**
+	\brief Set the control field of a LaMP header to "Ping-like (bidirectional) end request (timestampless)"
+
+	This function can be used to set the the control field inside an existing LaMP
+	header of an existing LaMP packet, to "Ping-like (bidirectional) end request (timestampless)".
+
+	The function takes as input the pointer to a LaMP header (i.e. to a memory area where a _struct lamphdr_ is stored).
+
+	\param[in,out]		lampHeader 		Pointer to the LaMP header structure.
+
+	\return None.
+**/
+void lampSetPinglikeEndreqTless(struct lamphdr *lampHeader) {
+	lampHeader->ctrl=CTRL_PINGLIKE_ENDREQ_TLESS;
+}
+
+/**
+	\brief Set the control field of a LaMP header to "Ping-like (bidirectional) end request"
+
+	This function can be used to set the the control field inside an existing LaMP
+	header of an existing LaMP packet, to "Ping-like (bidirectional) end request".
+
+	This function will look at the already existing control field and act accordingly:
+
+	1. If the control field corresponds to [CTRL_PINGLIKE_REQ](\ref CTRL_PINGLIKE_REQ), [CTRL_PINGLIKE_ENDREQ](\ref CTRL_PINGLIKE_ENDREQ) is set
+	2. If the control field corresponds to [CTRL_PINGLIKE_REQ_TLESS](\ref CTRL_PINGLIKE_REQ_TLESS), [CTRL_PINGLIKE_ENDREQ_TLESS](\ref CTRL_PINGLIKE_ENDREQ_TLESS) is set
+	3. Otherwise, the control field remains unmodified.
+
+	The function takes as input the pointer to a LaMP header (i.e. to a memory area where a _struct lamphdr_ is stored).
+
+	\param[in,out]		lampHeader 		Pointer to the LaMP header structure.
+
+	\return None.
+**/
+void lampSetPinglikeEndreqAll(struct lamphdr *lampHeader) {
+	if(lampHeader->ctrl==CTRL_PINGLIKE_REQ) {
+		lampHeader->ctrl=CTRL_PINGLIKE_ENDREQ;
+	} else if(lampHeader->ctrl==CTRL_PINGLIKE_REQ_TLESS) {
+		lampHeader->ctrl=CTRL_PINGLIKE_ENDREQ_TLESS;
+	}
 }
 
 /**

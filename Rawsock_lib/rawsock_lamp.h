@@ -10,8 +10,8 @@
 
 	The version number of this module is set to be the same as the main Rawsock library version number.
 
-	\version 0.2.1
-	\date 2019-02-26
+	\version 0.3.0
+	\date 2019-07-19
 	\copyright Licensed under GPLv2
 **/
 #ifndef RAWSOCK_LAMP_H_INCLUDED
@@ -37,6 +37,23 @@
 #define CTRL_PINGLIKE_REPLY_TLESS 0xAA /**< **LaMP type (full control field)**: Ping-like (bidirectional) reply - timestampless **/
 #define CTRL_PINGLIKE_ENDREQ_TLESS 0xAB /**< **LaMP type (full control field)**: Ping-like (bidirectional) end request - timestampless **/
 #define CTRL_PINGLIKE_ENDREPLY_TLESS 0xAC /**< **LaMP type (full control field)**: Ping-like (bidirectional) end reply - timestampless **/
+#define CTRL_FOLLOWUP_CTRL 0xAD /**< **LaMP type (full control field)**: Follow up control message (request, deny or accept) **/
+#define CTRL_FOLLOWUP_DATA 0xAE /**< **LaMP type (full control field)**: Follow up data message (time delta message) **/
+
+// Follow-up types
+#define FOLLOWUP_REQUEST	0x0000 /**< **LaMP follow-up control type**: follow-up request (default request type: 0x00) **/
+#define FOLLOWUP_DENY		0x0100 /**< **LaMP follow-up control type**: follow-up deny **/
+#define FOLLOWUP_ACCEPT		0x0200 /**< **LaMP follow-up control type**: follow-up accept **/
+#define FOLLOWUP_UNKNOWN  	0xFFFF /**< **LaMP follow-up control type**: bad or unknown request **/
+
+// Follow-up request types
+#define FOLLOWUP_REQUEST_T_APP		0x0000 /**< **LaMP follow-up request type**: application timestamps **/
+#define FOLLOWUP_REQUEST_T_KRN_RX 	0x0001 /**< **LaMP follow-up request type**: kernel rx timestamps **/
+#define FOLLOWUP_REQUEST_T_KRN 		0x0002 /**< **LaMP follow-up request type**: kernel timestamps **/
+#define FOLLOWUP_REQUEST_T_HW 		0x0003 /**< **LaMP follow-up request type**: hardware timestamps **/
+
+// Macro to check if a given "payload length or packet type" field, specified as 'idx', contains a valid FOLLOWUP_REQUEST or not, no matter the request type
+#define IS_FOLLOWUP_REQUEST(lenortype_field) ((lenortype_field & 0xFF00)==0x0000) /**< **LaMP Test macro**: it checks, given a "payload length or packet type" field of a FOLLOWUP_CTRL packet, specified as 'lenortype_field', if it corresponds to a valid FOLLOWUP_REQUEST or not, no matter the request type (i.e. it checks if the first byte is set to _0x00_) */
 
 // Macros that accounts for more than one packet at once (to be used inside if-else statements)
 #define IS_CTRL_PINGLIKE_REQ(ctrl) (ctrl==CTRL_PINGLIKE_REQ || ctrl==CTRL_PINGLIKE_REQ_TLESS) /**< **Multi-type LaMP type check macro**: checks if the control field of a LaMP header, specified as _ctrl_, corresponds to any kind of ping-like request */
@@ -49,6 +66,8 @@
 
 #define IS_INIT_INDEX_VALID(idx) (idx == INIT_PINGLIKE_INDEX || idx == INIT_UNIDIR_INDEX) /**< **LaMP Test macro**: checks whether the given INIT type field value (which can be extracted, for instance, from a received LaMP header and specified as _idx_) is valid or not. */
 #define IS_INIT(ctrl) (ctrl == CTRL_CONN_INIT) /**< **LaMP Test macro**: checks if the given control field value (specified as _ctrl_) is corresponding to "Connection INIT". */
+#define IS_FOLLOWUP_CTRL_REQ_TYPE_VALID(idx) (idx == FOLLOWUP_REQUEST_T_APP || idx == FOLLOWUP_REQUEST_T_KRN_RX || idx == FOLLOWUP_REQUEST_T_KRN || idx == FOLLOWUP_REQUEST_T_HW || (idx >= 0x00F0 && idx<= 0x00FF)) /**< **LaMP Test macro**: checks, given the full 16-bits long "payload length or packet type" field, whether it contains a valid follow-up request type or not (user defined values are included). */
+#define IS_FOLLOWUP_CTRL_TYPE_VALID(idx) (idx == FOLLOWUP_REQUEST || idx == FOLLOWUP_DENY || idx == FOLLOWUP_ACCEPT || IS_FOLLOWUP_CTRL_REQ_TYPE_VALID(idx)) /**< **LaMP Test macro**: checks whether the given FOLLOWUP_CTRL type field value (which can be extracted, for instance, from a received LaMP header and specified as _idx_) is valid or not. */
 #define IS_UNIDIR(ctrl) (ctrl == CTRL_UNIDIR_CONTINUE || ctrl == CTRL_UNIDIR_STOP) /**< **LaMP Test macro**: checks, though the specified (as _ctrl_) control field value, if the current packet is undirectional. */
 #define IS_PINGLIKE(ctrl) (ctrl == CTRL_PINGLIKE_REQ || ctrl == CTRL_PINGLIKE_REPLY || ctrl == CTRL_PINGLIKE_ENDREQ || ctrl == CTRL_PINGLIKE_ENDREPLY) /**< **LaMP Test macro**: checks, though the specified (as _ctrl_) control field value, if the current packet is ping-like. */
 #define IS_LAMP(reserved, ctrl) (reserved==PROTO_LAMP && (ctrl & PROTO_LAMP_CTRL_MASK)==PROTO_LAMP_CTRL_MASK) /**< **LaMP Test macro**: _important macro:_ you can use this to check if a received packet is really encapsulating LaMP, after trying to extract the reserved (_reserved_) and control (_ctrl_) fields from it (threating the first bytes as if they were a LaMP header). */
@@ -89,7 +108,9 @@ typedef enum {
 	PINGLIKE_REQ_TLESS,			/**< Ping-like (bidirectional) request - timestampless */
 	PINGLIKE_REPLY_TLESS,		/**< Ping-like (bidirectional) reply - timestampless */
 	PINGLIKE_ENDREQ_TLESS,		/**< Ping-like (bidirectional) end request - timestampless */
-	PINGLIKE_ENDREPLY_TLESS 	/**< Ping-like (bidirectional) end reply - timestampless */
+	PINGLIKE_ENDREPLY_TLESS, 	/**< Ping-like (bidirectional) end reply - timestampless */
+	FOLLOWUP_CTRL, 				/**< Follow-up control message */
+	FOLLOWUP_DATA 				/**< Follow-up data message */
 } lamptype_t;
 
 /**
@@ -127,17 +148,20 @@ struct lamphdr {
 	uint8_t ctrl; /**< Control field, 1 B: the first 4 bits should always be set to _0xA_, while the second 4 bits are used to encode the packet type. */
 	uint16_t id; /**< Identification field, 2 B: it is used to identify a certain LaMP session. */
 	uint16_t seq; /**< Sequence field, 2 B: it is used to store cyclically increasing sequence numbers, up to 65535, that can be used to identify lost packets and to associate replies with requests. */
-	uint16_t len; /**< Payload length or INIT type, 2 B: it store the (optional) payload length, up to 65535 B, or, if the message type is INIT, the type of the connection that should be established (pinglike or unidirectional). */
+	uint16_t len; /**< Payload length or packet type, 2 B: it store the (optional) payload length, up to 65535 B, or, if the message type is INIT or FOLLOWUP, the type of the connection that should be established (pinglike or unidirectional) or the kind of follow-up message. */
 	uint64_t sec; /**< 64-bit seconds timestamp, 8 B: it stores the seconds of the current packet timestamp. */
 	uint64_t usec; /**< 64-bit microseconds timestamp, 8 B: it stores the microseconds of the current packet timestamp. */
 };
 
 void lampHeadPopulate(struct lamphdr *lampHeader, unsigned char ctrl, unsigned short id, unsigned short seq);
-void lampHeadSetTimestamp(struct lamphdr *lampHeader); // Sets the LaMP header timestamp -> to be used with non-raw sockets, in which rawLampSend() cannot be used
+void lampHeadSetTimestamp(struct lamphdr *lampHeader, struct timeval *tStampPtr); // Sets the LaMP header timestamp (specify NULL as struct timeval *tStampPtr to use the current time instead of a custom timestamp) -> to be used with non-raw sockets, in which rawLampSend() cannot be used
 void lampEncapsulate(byte_t *packet, struct lamphdr *lampHeader, byte_t *data, size_t payloadsize);
 void lampSetUnidirStop(struct lamphdr *lampHeader);
 void lampSetPinglikeEndreq(struct lamphdr *lampHeader);
+void lampSetPinglikeEndreqTless(struct lamphdr *lampHeader);
+void lampSetPinglikeEndreqAll(struct lamphdr *lampHeader);
 void lampHeadSetConnType(struct lamphdr *initLampHeader, uint16_t mode_index);
+void lampHeadSetFollowupCtrlType(struct lamphdr *followupLampHeader, uint16_t followup_type);
 
 void lampHeadIncreaseSeq(struct lamphdr *inpacket_headerptr);
 int rawLampSend(int descriptor, struct sockaddr_ll addrll, struct lamphdr *inpacket_headerptr, byte_t *ethernetpacket, size_t finalpacketsize, endflag_t end_flag, protocol_t llprot);

@@ -1,5 +1,5 @@
 // Rawsock library, licensed under GPLv2
-// Version 0.2.1
+// Version 0.3.0
 #include "minirighi_udp_checksum.h"
 
 /**

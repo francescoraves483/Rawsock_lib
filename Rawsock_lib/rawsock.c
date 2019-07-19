@@ -1,5 +1,5 @@
 // Rawsock library, licensed under GPLv2
-// Version 0.2.1
+// Version 0.3.0
 #include "rawsock.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -1001,6 +1001,8 @@ size_t UDPencapsulate(byte_t *packet,struct udphdr *header,byte_t *data,size_t p
 		struct udphdr *udpHeader;
 		byte_t *payload;
 
+	If any argument is NULL, no pointer will be returned for that argument.
+
 	\note You can use this function, after receiving a packet, to retrieve header specific data and parse the payload.
 
 	\warning No memory is allocated by this function! It will return pointers inside the original _pktbuf_ buffer, by doing the proper arithmetics.
@@ -1010,15 +1012,19 @@ size_t UDPencapsulate(byte_t *packet,struct udphdr *header,byte_t *data,size_t p
 	\param[out]	IPheader    This pointer will be written by the function, storing the pointer to the IPv4 header inside the _pktbuf_ packet buffer.
 	\param[out]	UDPheader   This pointer will be written by the function, storing the pointer to the UDP header inside the _pktbuf_ packet buffer.
 	
-	\return The pointer to the payload (of type [byte_t](\ref byte_t)) is returned by the function. If _pktbuf_ is a valid pointer, it should never happen that the returned pointer is NULL.
+	\return The pointer to the payload (of type [byte_t](\ref byte_t)) is returned by the function. If _pktbuf_ is a valid pointer, it should never happen that the returned pointer is NULL. If _pktbuf_ is NULL, NULL will be returned.
 **/
 byte_t *UDPgetpacketpointers(byte_t *pktbuf,struct ether_header **etherHeader, struct iphdr **IPheader,struct udphdr **UDPheader) {
 	byte_t *payload=NULL;
 
-	*etherHeader=(struct ether_header*) pktbuf;
-	*IPheader=(struct iphdr*)(pktbuf+sizeof(struct ether_header));
-	*UDPheader=(struct udphdr*)(pktbuf+sizeof(struct ether_header)+sizeof(struct iphdr));
-	payload=(pktbuf+sizeof(struct ether_header)+sizeof(struct iphdr)+sizeof(struct udphdr));
+	if(pktbuf!=NULL) {
+		if(etherHeader) *etherHeader=(struct ether_header*) pktbuf;
+		if(IPheader) *IPheader=(struct iphdr*)(pktbuf+sizeof(struct ether_header));
+		if(UDPheader) *UDPheader=(struct udphdr*)(pktbuf+sizeof(struct ether_header)+sizeof(struct iphdr));
+		payload=(pktbuf+sizeof(struct ether_header)+sizeof(struct iphdr)+sizeof(struct udphdr));
+	} else {
+		payload=NULL;
+	}
 
 	return payload;
 }

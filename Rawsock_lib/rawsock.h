@@ -5,8 +5,8 @@
 	you want to use the library to simplify and enhance the use of Linux raw sockets.
 	It supports, as of now, IPv4 and UDP.
 
-	\version 0.2.1
-	\date 2019-02-26
+	\version 0.3.0
+	\date 2019-07-19
 	\copyright Licensed under GPLv2
 **/
 #ifndef RAWSOCK_H_INCLUDED

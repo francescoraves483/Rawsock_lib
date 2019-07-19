@@ -2,7 +2,7 @@
 
 Raw sockets under Linux... made easier! C library for using raw sockets to send packets, supporting Linux. 
 
-Version 0.2.1, supporting IPv4 and UDP, but ready for the addition of new protocols, such as WSMP. With the addition of a custom latency measurement L7 protocol (**LaMP** - <b>La</b>tency <b>M</b>easurement <b>P</b>rotocol).
+Version 0.3.0, supporting IPv4 and UDP, but ready for the addition of new protocols, such as WSMP. With the addition of a custom latency measurement L7 protocol (**LaMP** - <b>La</b>tency <b>M</b>easurement <b>P</b>rotocol).
 
 ![](./docs/pics/LaMP_logo.png)
 
@@ -16,7 +16,7 @@ Two example programs for broadcast communications (**Example_send.c** and **Exam
 
 A function (wlanLookup()) to automatically look for available wireless (or loopback) interfaces is included too.
 
-This library is for Linux only, at the moment! Tested with Linux kernel versions 4.14.63 and 4.15.0.
+This library is for Linux only, at the moment. Tested with Linux kernel 4.14.63 and later.
 
 **Cross-compiling for OpenWrt, on PC Engines APU1D boards:**
 
