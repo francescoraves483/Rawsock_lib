@@ -300,7 +300,7 @@ int rawLampSend(int descriptor, struct sockaddr_ll addrll, struct lamphdr *inpac
 			inpacket_headerptr_ipv4=(struct iphdr *) ((byte_t *)inpacket_headerptr_udp-sizeof(struct iphdr));
 
 			inpacket_headerptr_udp->check=0;
-			if(IS_INIT(inpacket_headerptr->ctrl)) {
+			if(IS_INIT(inpacket_headerptr->ctrl) || IS_FOLLOWUP_CTRL(inpacket_headerptr->ctrl)) {
 				packetsize=sizeof(struct udphdr)+LAMP_HDR_SIZE();
 			} else {
 				packetsize=sizeof(struct udphdr)+LAMP_HDR_PAYLOAD_SIZE(ntohs(inpacket_headerptr->len));
