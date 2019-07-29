@@ -1,5 +1,5 @@
 // Rawsock library, licensed under GPLv2
-// Version 0.3.0
+// Version 0.3.1
 #include "rawsock.h"
 #include <stdio.h>
 #include <stdlib.h>
