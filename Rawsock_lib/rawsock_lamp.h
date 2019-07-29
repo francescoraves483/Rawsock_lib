@@ -70,7 +70,7 @@
 #define IS_FOLLOWUP_CTRL_REQ_TYPE_VALID(idx) (idx == FOLLOWUP_REQUEST_T_APP || idx == FOLLOWUP_REQUEST_T_KRN_RX || idx == FOLLOWUP_REQUEST_T_KRN || idx == FOLLOWUP_REQUEST_T_HW || (idx >= 0x00F0 && idx<= 0x00FF)) /**< **LaMP Test macro**: checks, given the full 16-bits long "payload length or packet type" field, whether it contains a valid follow-up request type or not (user defined values are included). */
 #define IS_FOLLOWUP_CTRL_TYPE_VALID(idx) (idx == FOLLOWUP_REQUEST || idx == FOLLOWUP_DENY || idx == FOLLOWUP_ACCEPT || IS_FOLLOWUP_CTRL_REQ_TYPE_VALID(idx)) /**< **LaMP Test macro**: checks whether the given FOLLOWUP_CTRL type field value (which can be extracted, for instance, from a received LaMP header and specified as _idx_) is valid or not. */
 #define IS_UNIDIR(ctrl) (ctrl == CTRL_UNIDIR_CONTINUE || ctrl == CTRL_UNIDIR_STOP) /**< **LaMP Test macro**: checks, though the specified (as _ctrl_) control field value, if the current packet is undirectional. */
-#define IS_PINGLIKE(ctrl) (ctrl == CTRL_PINGLIKE_REQ || ctrl == CTRL_PINGLIKE_REPLY || ctrl == CTRL_PINGLIKE_ENDREQ || ctrl == CTRL_PINGLIKE_ENDREPLY) /**< **LaMP Test macro**: checks, though the specified (as _ctrl_) control field value, if the current packet is ping-like. */
+#define IS_PINGLIKE(ctrl) (ctrl == CTRL_PINGLIKE_REQ || ctrl == CTRL_PINGLIKE_REPLY || ctrl == CTRL_PINGLIKE_ENDREQ || ctrl == CTRL_PINGLIKE_ENDREPLY || ctrl == CTRL_PINGLIKE_REQ_TLESS || ctrl == CTRL_PINGLIKE_REPLY_TLESS || ctrl == CTRL_PINGLIKE_ENDREQ_TLESS || ctrl == CTRL_PINGLIKE_ENDREPLY_TLESS) /**< **LaMP Test macro**: checks, though the specified (as _ctrl_) control field value, if the current packet is ping-like. */
 #define IS_LAMP(reserved, ctrl) (reserved==PROTO_LAMP && (ctrl & PROTO_LAMP_CTRL_MASK)==PROTO_LAMP_CTRL_MASK) /**< **LaMP Test macro**: _important macro:_ you can use this to check if a received packet is really encapsulating LaMP, after trying to extract the reserved (_reserved_) and control (_ctrl_) fields from it (threating the first bytes as if they were a LaMP header). */
 
 #define ETHERTYPE_LAMP ETH_P_802_EX1 /**< Local Experimental Ethertype should be used if LaMP is encapsulated directly inside a 802.11/Ethernet packet. You can use **ETHERTYPE_LAMP** for the sake of clarity (but **ETH_P_802_EX1** is perfectly fine too). */
@@ -120,7 +120,7 @@ typedef enum {
 	This enumerator can be used to tell rawLampSend() is the current packet whether the last one of the current session or not.
 
 	If it is **FLG_STOP**, the current packet will be threated as last one, and its type will be forced to "ping-like (bidirectional) end request"
-	or "unidirectional stop" (depending on the current session type).
+	or "ping-like (bidirectional) end request - timestampless" or "unidirectional stop" (depending on the current session type).
 
 	If it is **FLG_CONTINUE** the current packet will not be threated as the last one, and its type won't be changed (it remains as specified before,
 	for example by means of lampHeadPopulate().

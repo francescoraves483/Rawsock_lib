@@ -281,7 +281,11 @@ int rawLampSend(int descriptor, struct sockaddr_ll addrll, struct lamphdr *inpac
 	if(IS_UNIDIR(inpacket_headerptr->ctrl) && end_flag==FLG_STOP) {
 		inpacket_headerptr->ctrl=CTRL_UNIDIR_STOP;
 	} else if(IS_PINGLIKE(inpacket_headerptr->ctrl) && end_flag==FLG_STOP) {
-		inpacket_headerptr->ctrl=CTRL_PINGLIKE_ENDREQ;
+		if(inpacket_headerptr->ctrl==CTRL_PINGLIKE_REQ) {
+			inpacket_headerptr->ctrl=CTRL_PINGLIKE_ENDREQ;
+		} else if(inpacket_headerptr->ctrl==CTRL_PINGLIKE_REQ_TLESS) {
+			inpacket_headerptr->ctrl=CTRL_PINGLIKE_ENDREQ_TLESS;
+		}
 	}
 
 	if(IS_UNIDIR(inpacket_headerptr->ctrl) || inpacket_headerptr->ctrl==CTRL_PINGLIKE_REQ || inpacket_headerptr->ctrl==CTRL_PINGLIKE_ENDREQ) {
