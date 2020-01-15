@@ -119,7 +119,9 @@ struct ipaddrs {
 **/
 typedef enum {
 	UNSET_P, 	/**< Unspecified protocol type */
-	UDP 		/**< UDP over IPv4 */
+	UDP, 		/**< UDP over IPv4 */
+	AMQP_0_9,   /**< AMQP 0.9 (RabbitMQ) - not yet supported by the library */
+	AMQP_1_0    /**< AMQP 1.0 (ActiveMQ) - not yet supported by the library */
 } protocol_t;
 
 // General utilities
