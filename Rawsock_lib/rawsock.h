@@ -6,7 +6,7 @@
 	It supports, as of now, IPv4 and UDP.
 
 	\version 0.3.1
-	\date 2019-07-29
+	\date 2020-01-24
 	\copyright Licensed under GPLv2
 **/
 #ifndef RAWSOCK_H_INCLUDED
