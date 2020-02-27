@@ -5,7 +5,7 @@
 	you want to use the library to simplify and enhance the use of Linux raw sockets.
 	It supports, as of now, IPv4 and UDP.
 
-	\version 0.3.1
+	\version 0.3.2
 	\date 2020-01-24
 	\copyright Licensed under GPLv2
 **/
@@ -47,6 +47,7 @@
 #define MAC_BROADCAST 0x01 /**< __MAC type definition (managed by prepareMacAddrT(), macAddrTypeGet() and freeMacAddrT())__: broadcast (FF:FF:FF:FF:FF:FF) MAC address. */
 #define MAC_UNICAST 0x02 /**< __MAC type definition (managed by prepareMacAddrT(), macAddrTypeGet() and freeMacAddrT())__: unicast MAC address. */
 #define MAC_MULTICAST 0x03 /**< __MAC type definition (managed by prepareMacAddrT(), macAddrTypeGet() and freeMacAddrT())__: multicast (01:_xx_:_xx_:_xx_:_xx_:_xx_) MAC address. */
+#define MAC_ZERO 0x04 /**< __MAC type definition (managed by prepareMacAddrT(), macAddrTypeGet() and freeMacAddrT())__: all-zero (00:00:00:00:00:00) MAC address (no MAC is set). */
 
 // Useful constants
 // Additional EtherTypes

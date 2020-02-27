@@ -1,5 +1,5 @@
 // Rawsock library, licensed under GPLv2
-// Version 0.3.1
+// Version 0.3.2
 #include "rawsock.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,6 +7,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <linux/wireless.h>
+#include <linux/ethtool.h>
+#include <linux/sockios.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
@@ -25,6 +27,17 @@ static uint64_t swap64(uint64_t unsignedvalue, uint32_t (*swap_byte_order)(uint3
 	#else
 	#error "The system seems to be neither little endian nor big endian..." 
 	#endif
+}
+
+static uint8_t is_if_tun(int sFd,char *devname) {
+	struct ethtool_drvinfo drvinfo;
+	struct ifreq ethtool_ifr;
+
+	drvinfo.cmd=ETHTOOL_GDRVINFO;
+	strncpy(ethtool_ifr.ifr_name,devname,IFNAMSIZ);
+	ethtool_ifr.ifr_data=(void *)&drvinfo;
+
+	return ioctl(sFd,SIOCETHTOOL,&ethtool_ifr)!=-1 && strncmp(drvinfo.bus_info,"tun",ETHTOOL_BUSINFO_LEN)==0;
 }
 
 /**
@@ -78,7 +91,7 @@ void freeMacAddrT(macaddr_t mac) {
 
 	\param[in]	mac 	A previously allocated [macaddr_t](\ref macaddr_t) variable/pointer.
 
-	\return The MAC address tupe is returned: either [MAC_NULL](\ref MAC_NULL), [MAC_UNICAST](\ref MAC_UNICAST), [MAC_MULTICAST](\ref MAC_MULTICAST) or [MAC_BROADCAST](\ref MAC_BROADCAST). They are all threated as _unsigned int_.
+	\return The MAC address tupe is returned: either [MAC_NULL](\ref MAC_NULL), [MAC_UNICAST](\ref MAC_UNICAST), [MAC_MULTICAST](\ref MAC_MULTICAST), [MAC_BROADCAST](\ref MAC_BROADCAST) or [MAC_ZERO](\ref MAC_ZERO). They are all threated as _unsigned int_.
 **/
 unsigned int macAddrTypeGet(macaddr_t mac) {
 	if(mac!=NULL) {
@@ -86,6 +99,8 @@ unsigned int macAddrTypeGet(macaddr_t mac) {
 			return MAC_MULTICAST;
 		} else if(mac[0]==0xFF && mac[1]==0xFF && mac[2]==0xFF && mac[3]==0xFF && mac[4]==0xFF && mac[5]==0xFF) {
 			return MAC_BROADCAST;
+		} else if(mac[0]==0x00 && mac[1]==0x00 && mac[2]==0x00 && mac[3]==0x00 && mac[4]==0x00 && mac[5]==0x00) {
+			return MAC_ZERO;
 		} else {
 			return MAC_UNICAST;
 		}
@@ -181,7 +196,7 @@ rawsockerr_t wlanLookup(char *devname, int *ifindex, macaddr_t mac, struct in_ad
 
 			break;
 		} else {
-			if(ifaddr_it->ifa_addr!=NULL && ifaddr_it->ifa_addr->sa_family == AF_PACKET) {
+			if(ifaddr_it->ifa_addr!=NULL && (ifaddr_it->ifa_addr->sa_family == AF_PACKET || (ifaddr_it->ifa_addr->sa_family == AF_INET && is_if_tun(sFd,ifaddr_it->ifa_name)))) {
 				// fprintf(stdout,"Checking interface %s for use.\n",ifaddr_it->ifa_name);
 				// IFNAMSIZ is defined by system libraries and it "defines the maximum buffer size needed to hold an interface name, 
 				//  including its terminating zero byte"
@@ -328,32 +343,34 @@ rawsockerr_t vifPrinter(FILE *stream) {
 		return ERR_VIFPRINTER_GETIFADDRS;
 	}
 
-	fprintf(stream,"Interface name\t | Interface type\t | Interface internal index\n"
-		 "--------------\t | --------------\t | ------------------------\n");
+	fprintf(stream,"Interface name   | Interface type | Interface internal index\n"
+		 "--------------   | -------------- | ------------------------\n");
 
 	// Looking for wlan interfaces
 	bzero(&wifireq,sizeof(wifireq));
 	// Iterating over the interfaces linked list
 	for(ifaddr_it=ifaddr_head;ifaddr_it!=NULL;ifaddr_it=ifaddr_it->ifa_next) {
 		if(ifaddr_it->ifa_addr!=NULL && (ifaddr_it->ifa_flags & IFF_LOOPBACK) && ifaddr_it->ifa_addr->sa_family==AF_PACKET) {
-			fprintf(stream,"%s\t\t | %s\t\t | %s\t\n",ifaddr_it->ifa_name,"Loopback","(lo)");
+			fprintf(stream,"%s\t\t | %-14s | %s\t\n",ifaddr_it->ifa_name,"Loopback","(lo)");
 		} else {
 			if(ifaddr_it->ifa_addr!=NULL && ifaddr_it->ifa_addr->sa_family==AF_PACKET) {
-
 				strncpy(wifireq.ifr_name,ifaddr_it->ifa_name,IFNAMSIZ); 
 				if(ioctl(sFd,SIOCGIWNAME,&wifireq)!=-1) {
 					if(ioctl(sFd,SIOCGIFFLAGS,&wifireq)!=-1 && (wifireq.ifr_flags & IFF_UP)) {
 						// If the interface is up, print the information related to such interface
-						fprintf(stream,"%s\t\t | %s\t\t | (wlan) %d\t\n",ifaddr_it->ifa_name,"Wireless",wlan_ifno);
+						fprintf(stream,"%-*s | %-14s | (wlan) %d\t\n",IFNAMSIZ,ifaddr_it->ifa_name,"Wireless",wlan_ifno);
 						wlan_ifno++;
 					}
 				} else {
 					// Interface is not wireless
 					if(ifaddr_it->ifa_addr!=NULL && (ifaddr_it->ifa_flags & IFF_UP)) {
-						fprintf(stream,"%s\t\t | %s\t\t | (non-wlan) %d\t\n",ifaddr_it->ifa_name,"Non-wireless",nonwlan_ifno);
+						fprintf(stream,"%-*s | %-14s | (non-wlan) %d\t\n",IFNAMSIZ,ifaddr_it->ifa_name,"Non-wireless",nonwlan_ifno);
 						nonwlan_ifno++;
 					}
 				}
+			} else if(ifaddr_it->ifa_addr!=NULL && ifaddr_it->ifa_addr->sa_family==AF_INET && is_if_tun(sFd,ifaddr_it->ifa_name)) {
+				fprintf(stream,"%-*s | %-14s | (non-wlan) %d\t\n",IFNAMSIZ,ifaddr_it->ifa_name,"tun (AF_INET)",nonwlan_ifno);
+				nonwlan_ifno++;
 			}
 		}
 	}
