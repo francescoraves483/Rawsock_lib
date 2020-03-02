@@ -1,5 +1,5 @@
 // Rawsock library, licensed under GPLv2
-// Version 0.3.2
+// Version 0.3.3
 #include "rawsock.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -184,7 +184,7 @@ rawsockerr_t wlanLookup(char *devname, int *ifindex, macaddr_t mac, struct in_ad
 	}
 
 	// Looking for wlan interfaces
-	bzero(&wifireq,sizeof(wifireq));
+	memset(&wifireq,0,sizeof(wifireq));
 	// Iterating over the interfaces linked list
 	for(ifaddr_it=ifaddr_head;ifaddr_it!=NULL;ifaddr_it=ifaddr_it->ifa_next) {
 		if(index==-1 && ifaddr_it->ifa_addr!=NULL && (ifaddr_it->ifa_flags & IFF_LOOPBACK)) {
@@ -347,7 +347,7 @@ rawsockerr_t vifPrinter(FILE *stream) {
 		 "--------------   | -------------- | ------------------------\n");
 
 	// Looking for wlan interfaces
-	bzero(&wifireq,sizeof(wifireq));
+	memset(&wifireq,0,sizeof(wifireq));
 	// Iterating over the interfaces linked list
 	for(ifaddr_it=ifaddr_head;ifaddr_it!=NULL;ifaddr_it=ifaddr_it->ifa_next) {
 		if(ifaddr_it->ifa_addr!=NULL && (ifaddr_it->ifa_flags & IFF_LOOPBACK) && ifaddr_it->ifa_addr->sa_family==AF_PACKET) {

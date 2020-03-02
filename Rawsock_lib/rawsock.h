@@ -5,7 +5,7 @@
 	you want to use the library to simplify and enhance the use of Linux raw sockets.
 	It supports, as of now, IPv4 and UDP.
 
-	\version 0.3.2
+	\version 0.3.3
 	\date 2020-01-24
 	\copyright Licensed under GPLv2
 **/
@@ -19,6 +19,10 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+
+#ifdef __ANDROID__
+	#define udphdr __kernel_udphdr
+#endif
 
 #define MAC_FILE_PATH_SIZE 23 /**< Reserved for future use. */
 #define MAC_ADDR_SIZE 6 /**< Size of a MAC address, in _bytes_. You can use this definition to declare your own *uint8_t*, *unsigned char* or *byte_t* array, with *MAC_ADDR_SIZE* elements, to store any MAC address. For instance: `uint8_t macaddress[MAC_ADDR_SIZE];`*/

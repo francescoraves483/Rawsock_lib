@@ -2,7 +2,9 @@
 
 Raw sockets under Linux... made easier! C library for using raw sockets to send packets, supporting Linux. 
 
-Version 0.3.2, supporting IPv4 and UDP, but ready for the addition of new protocols, such as WSMP. With the addition of a custom latency measurement L7 protocol (**LaMP** - <b>La</b>tency <b>M</b>easurement <b>P</b>rotocol).
+Starting from version 0.3.3, compilation of the main library on Android should be fully functional (e.g. when compiling on a terminal emulator such as Termux, using clang).
+
+Version 0.3.3, supporting IPv4 and UDP, but ready for the addition of new protocols, such as WSMP. With the addition of a custom latency measurement L7 protocol (**LaMP** - <b>La</b>tency <b>M</b>easurement <b>P</b>rotocol).
 
 ![](./docs/pics/LaMP_logo.png)
 

@@ -52,7 +52,7 @@ int main (int argc, char **argv) {
 	fprintf(stdout,"Using interface: %s - index: 0x%02x - number of VIFs: %d\n",devname,ifindex,ret_wlanl_val);
 
 	// Prepare sockaddr_ll structure
-	bzero(&addrll,sizeof(addrll));
+	memset(&addrll,0,sizeof(addrll));
 	addrll.sll_ifindex=ifindex;
 	addrll.sll_family=AF_PACKET;
 	addrll.sll_protocol=htons(ETH_P_ALL);

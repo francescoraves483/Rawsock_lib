@@ -10,7 +10,7 @@
 
 	The version number of this module is set to be the same as the main Rawsock library version number.
 
-	\version 0.3.2
+	\version 0.3.3
 	\date 2019-07-29
 	\copyright Licensed under GPLv2
 **/
