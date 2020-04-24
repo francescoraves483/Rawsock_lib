@@ -1,5 +1,5 @@
 // Rawsock library, licensed under GPLv2
-// Version 0.3.3
+// Version 0.3.4
 #include "rawsock.h"
 #include "rawsock_lamp.h"
 #include "minirighi_udp_checksum.h"
@@ -139,8 +139,9 @@ void lampHeadIncreaseSeq(struct lamphdr *inpacket_headerptr) {
 	// Take into account ciclicity in the sequence numbers
 	if(inpacket_headerptr->seq==UINT16_MAX) {
 		seq=0;
+	} else {
+		seq++;
 	}
-	seq++;
 	inpacket_headerptr->seq=ntohs(seq);
 }
 
